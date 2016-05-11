@@ -7,10 +7,42 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define MAXSIZEBUFFIN 32
+#define MAXSIZEBUFFOUT 4096*1024
+
+static void bev_write_cb(struct bufferevent *bev, void *ctx) {
+    MDB_env *env;
+    MDB_dbi dbi;
+    MDB_val key, data;
+    MDB_txn *txn;
+    MDB_cursor *cursor;
+    char sval[MAXSIZEBUFFOUT];
+    char keyVal[MAXSIZEBUFFIN];
+
+    /* Note: Most error checking omitted for simplicity */
+
+    rc = mdb_env_create(&env);
+    mdb_env_set_maxdbs(env, (MDB_dbi)10);
+    rc = mdb_env_open(env, "./demoDB", 0, 0664);
+    rc = mdb_txn_begin(env, NULL, 0, &txn);
+    rc = mdb_dbi_open(txn, "my database", NULL, &dbi);
+    if (rc) {
+        fprintf(stderr, "fail to open db: (%d) %s\n", rc, mdb_strerror(rc));
+        goto leave;
+    }
+    rc = mdb_get(txn, dbi, &key, &data, 0);
+
+    leave:
+    mdb_dbi_close(env, dbi);
+    mdb_env_close(env);
+    return 0;
+}
 
 static void bev_read_cb(struct bufferevent *bev, void *ctx) {
+    char buff[MAXSIZEBUFFIN];
     struct evbuffer *input_evb = bufferevent_get_input(bev);
-    
+    evbuffer_copyout(evb, buff, evbuffer_get_length(evb));
+    fprintf(stdout, "input: %d", *(int*)buff);
 }
 
 static void bev_event_cb(struct bufferevent *bev, short ev, void *ctx) {
