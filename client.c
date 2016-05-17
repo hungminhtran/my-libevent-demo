@@ -7,7 +7,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#define BUFFSIZE 8
+#define BUFFSIZE 16
 
 void die(char *mess) {
     perror(mess);

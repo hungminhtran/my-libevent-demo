@@ -34,8 +34,8 @@ static void echo_read_cb(struct bufferevent *bev, void *ctx)
     char *data;
     data = malloc(MAX_DATA_ALLOCATE_SIZE);
     getDataFromDB(DB_ENV, DB_NAME, keyVal[0], &data);
-    fprintf(stderr, "data gotten:%s", data);
-    evbuffer_add(output, data, MAX_DATA_ALLOCATE_SIZE);
+    fprintf(stderr, "data gotten:%s\n", data);
+    evbuffer_add(output, data, sizeof(data));
     free(keyVal);
     free(data);
     // evbuffer_add_buffer(output, input);
@@ -43,6 +43,16 @@ static void echo_read_cb(struct bufferevent *bev, void *ctx)
 
 static void echo_write_cb(struct bufferevent *bev, void *ctx)
 {
+    struct evbuffer *output = bufferevent_get_output(bev);
+    char *data;
+    data = malloc(MAX_DATA_ALLOCATE_SIZE);
+
+    ev_ssize_t tlen = evbuffer_copyout(output, data, MAX_DATA_ALLOCATE_SIZE);
+    if (tlen < 0)
+        fprintf(stderr, "error when copy output dat");
+
+    fprintf(stderr, "output data: %s\n", data);
+
     fprintf(stderr, "call write cb \n");
 }
 
