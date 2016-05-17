@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include "lmdb.h"
 #include <string.h>
+#include "lmdbInterface.h"
+
+#define DB_ENV "./demoDB"
+#define DB_NAME "what"
 
 int main(int argc,char * argv[])
 {
@@ -10,40 +14,42 @@ int main(int argc,char * argv[])
     MDB_val key, data;
     MDB_txn *txn;
     MDB_cursor *cursor;
-    char sval[4096*1024];
+    char sval[MAX_DATA_ALLOCATE_SIZE];
 
     /* Note: Most error checking omitted for simplicity */
 
     rc = mdb_env_create(&env);
-    rc = mdb_env_open(env, "./demoDB", 0, 0664);
+    mdb_env_set_mapsize(env, MAX_DB_SIZE);
+    mdb_env_set_maxdbs(env, (MDB_dbi)10);
+    rc = mdb_env_open(env, DB_ENV, 0, 0664);
     rc = mdb_txn_begin(env, NULL, 0, &txn);
-    rc = mdb_dbi_open(txn, "what", MDB_CREATE, &dbi);
+    rc = mdb_dbi_open(txn, DB_NAME, MDB_CREATE, &dbi);
 
     
-    key.mv_size = sizeof(int);
-    key.mv_data = sval;
-    data.mv_size = sizeof(sval);
-    data.mv_data = sval;
-
-    sprintf(sval, "%03x %d foo bar", 32, 3141592);
-    rc = mdb_put(txn, dbi, &key, &data, 0);
-    rc = mdb_txn_commit(txn);
-    if (rc) {
-        fprintf(stderr, "mdb_txn_commit: (%d) %s\n", rc, mdb_strerror(rc));
-        goto leave;
-    }
-
-    // for (int i = 0; i < 255; i++) {
-    //     memset(sval, i, sizeof(sval));
-
-    //     key.mv_size = sizeof(int);
-    //     key.mv_data = sval;
-    //     data.mv_size = sizeof(sval);
-    //     data.mv_data = sval;
-
-    //     rc = mdb_put(txn, dbi, &key, &data, 0);
-    //     rc = mdb_txn_commit(txn);
+    // key.mv_size = sizeof(int);
+    // key.mv_data = sval;
+    // data.mv_size = sizeof(sval);
+    // data.mv_data = sval;
+    // memset(sval, 65, sizeof(sval));
+    // rc = mdb_put(txn, dbi, &key, &data, 0);
+    // rc = mdb_txn_commit(txn);
+    // if (rc) {
+    //     fprintf(stderr, "mdb_txn_commit: (%d) %s\n", rc, mdb_strerror(rc));
+    //     goto leave;
     // }
+
+    for (int i = 65; i < 65+29; i++) {
+        memset(sval, i, sizeof(sval));
+
+        key.mv_size = MAX_KEY_ALLOCATE_SIZE;
+        key.mv_data = sval;
+        data.mv_size = sizeof(sval);
+        data.mv_data = sval;
+        memset(sval, i, sizeof(sval));
+        rc = mdb_put(txn, dbi, &key, &data, 0);
+        // rc = mdb_txn_commit(txn);
+    }
+     rc = mdb_txn_commit(txn);
     if (rc) {
         fprintf(stderr, "mdb_txn_commit: (%d) %s\n", rc, mdb_strerror(rc));
         goto leave;
@@ -52,9 +58,8 @@ int main(int argc,char * argv[])
     rc = mdb_txn_begin(env, NULL, MDB_RDONLY, &txn);
     rc = mdb_cursor_open(txn, dbi, &cursor);
     while ((rc = mdb_cursor_get(cursor, &key, &data, MDB_NEXT)) == 0) {
-        fprintf(stderr, "key: %p %.*s, data: %p %.*s\n",
-            key.mv_data,  (int) key.mv_size,  (char *) key.mv_data,
-            data.mv_data, (int) data.mv_size, (char *) data.mv_data);
+        // fprintf(stderr, "key: %s, data: %s\n",(char *) key.mv_data,(char *) data.mv_data);
+        fprintf(stderr, "data: %s\n",(char *) data.mv_data);
     }
     mdb_cursor_close(cursor);
     mdb_txn_abort(txn);

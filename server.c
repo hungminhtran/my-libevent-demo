@@ -9,8 +9,11 @@
 #include <stdio.h>
 #include <errno.h>
 #include "lmdb.h"
-#define MAX_ALLOCATE_SIZE 4
+#include "lmdbInterface.h"
+
 #define PORT_USE 8888
+#define DB_ENV "./demoDB"
+#define DB_NAME "what"
 
 static void echo_read_cb(struct bufferevent *bev, void *ctx)
 {
@@ -19,13 +22,21 @@ static void echo_read_cb(struct bufferevent *bev, void *ctx)
     struct evbuffer *output = bufferevent_get_output(bev);
     
     size_t len = evbuffer_get_length(input);
-    char *data;
-    data = malloc(MAX_ALLOCATE_SIZE);
-    memset(data, 0, MAX_ALLOCATE_SIZE);
-    ev_ssize_t tlen = evbuffer_copyout(input, data, len);
+    char *keyVal;
+    keyVal = malloc(MAX_KEY_ALLOCATE_SIZE);
+    memset(keyVal, 0, MAX_KEY_ALLOCATE_SIZE);
+    ev_ssize_t tlen = evbuffer_copyout(input, keyVal, len);
     if (tlen < 0)
-        fprintf(stderr, "error when copy data");
-    // fprintf(stderr, "%s", data);
+        fprintf(stderr, "error when copy input dat");
+
+    // fprintf(stderr, "input data %c", keyVal[0]);
+
+    char *data;
+    data = malloc(MAX_DATA_ALLOCATE_SIZE);
+    getDataFromDB(DB_ENV, DB_NAME, keyVal[0], &data);
+    fprintf(stderr, "data gotten:%s", data);
+    evbuffer_add(output, data, MAX_DATA_ALLOCATE_SIZE);
+    free(keyVal);
     free(data);
     // evbuffer_add_buffer(output, input);
 }
@@ -37,8 +48,6 @@ static void echo_write_cb(struct bufferevent *bev, void *ctx)
 
 static void echo_event_cb(struct bufferevent *bev, short events, void *ctx)
 {
-    if (events & BEV_EVENT_ERROR)
-        perror("Error from bufferevent");
     if (events & BEV_EVENT_ERROR ) {
         fprintf(stderr, "Close connection because of error\n");
         bufferevent_free(bev);
@@ -96,7 +105,5 @@ int main(int argc, char **argv)
     }
     evconnlistener_set_error_cb(listener, accept_error_cb);
     event_base_dispatch(base);
-
-
     return 0;
 }
