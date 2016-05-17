@@ -3,97 +3,100 @@
 #include <event2/buffer.h>
 
 #include <arpa/inet.h>
+
 #include <string.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
+#include "lmdb.h"
+#define MAX_ALLOCATE_SIZE 4
+#define PORT_USE 8888
 
-#define MAXSIZEBUFFIN 32
-#define MAXSIZEBUFFOUT 4096*1024
+static void echo_read_cb(struct bufferevent *bev, void *ctx)
+{
 
-static void bev_write_cb(struct bufferevent *bev, void *ctx) {
-    MDB_env *env;
-    MDB_dbi dbi;
-    MDB_val key, data;
-    MDB_txn *txn;
-    MDB_cursor *cursor;
-    char sval[MAXSIZEBUFFOUT];
-    char keyVal[MAXSIZEBUFFIN];
-
-    /* Note: Most error checking omitted for simplicity */
-
-    rc = mdb_env_create(&env);
-    mdb_env_set_maxdbs(env, (MDB_dbi)10);
-    rc = mdb_env_open(env, "./demoDB", 0, 0664);
-    rc = mdb_txn_begin(env, NULL, 0, &txn);
-    rc = mdb_dbi_open(txn, "my database", NULL, &dbi);
-    if (rc) {
-        fprintf(stderr, "fail to open db: (%d) %s\n", rc, mdb_strerror(rc));
-        goto leave;
-    }
-    rc = mdb_get(txn, dbi, &key, &data, 0);
-
-    leave:
-    mdb_dbi_close(env, dbi);
-    mdb_env_close(env);
-    return 0;
+    struct evbuffer *input = bufferevent_get_input(bev);
+    struct evbuffer *output = bufferevent_get_output(bev);
+    
+    size_t len = evbuffer_get_length(input);
+    char *data;
+    data = malloc(MAX_ALLOCATE_SIZE);
+    memset(data, 0, MAX_ALLOCATE_SIZE);
+    ev_ssize_t tlen = evbuffer_copyout(input, data, len);
+    if (tlen < 0)
+        fprintf(stderr, "error when copy data");
+    // fprintf(stderr, "%s", data);
+    free(data);
+    // evbuffer_add_buffer(output, input);
 }
 
-static void bev_read_cb(struct bufferevent *bev, void *ctx) {
-    char buff[MAXSIZEBUFFIN];
-    struct evbuffer *input_evb = bufferevent_get_input(bev);
-    evbuffer_copyout(evb, buff, evbuffer_get_length(evb));
-    fprintf(stdout, "input: %d", *(int*)buff);
+static void echo_write_cb(struct bufferevent *bev, void *ctx)
+{
+    fprintf(stderr, "call write cb \n");
 }
 
-static void bev_event_cb(struct bufferevent *bev, short ev, void *ctx) {
-    switch (ev) {
-        case BEV_EVENT_ERROR:
-        fprintf(stderr, "Error from bufferevent");
+static void echo_event_cb(struct bufferevent *bev, short events, void *ctx)
+{
+    if (events & BEV_EVENT_ERROR)
+        perror("Error from bufferevent");
+    if (events & BEV_EVENT_ERROR ) {
+        fprintf(stderr, "Close connection because of error\n");
         bufferevent_free(bev);
-        break;
-        case BEV_EVENT_EOF:
-        fprintf(stderr, "Close connection EOF\n");
-        bufferevent_free(bev);
-        break;
-        default:;
     }
-
+    if (events & BEV_EVENT_EOF) {
+        fprintf(stderr, "Close connection because out of data\n");
+        bufferevent_free(bev);
+    }
 }
-static void listenerCallbackAcceptConnection(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen,void *ctx) {
-    struct event_base *base = evconnlistener_get_eventbase(listener);
+
+static void accept_conn_cb(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen,void *ctx)
+{
+        /* We got a new connection! Set up a bufferevent for it. */
+    struct event_base *base = evconnlistener_get_base(listener);
     struct bufferevent *bev = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE);
-    bufferevent_setcb(bev, bev_read_cb, bev_write_cb, bev_event_cb, NULL);
-    bufferevent_enable(bev, EV_READ|EV_WRITE);    
 
+    bufferevent_setcb(bev, echo_read_cb, echo_write_cb, echo_event_cb, NULL);
+
+    bufferevent_enable(bev, EV_READ|EV_WRITE);
 }
-static void listener_error_cb(struct evconnlistener *evl, void *ctx) {
+
+static void accept_error_cb(struct evconnlistener *listener, void *ctx)
+{
+    struct event_base *base = evconnlistener_get_base(listener);
     int err = EVUTIL_SOCKET_ERROR();
-    fprintf(stderr, "Got an error:(%d) %s", err, evutil_socket_error_to_string(err));
-    exit(1);
+    fprintf(stderr, "Got an error %d (%s) on the listener. Shutting down.\n", err, evutil_socket_error_to_string(err));
+
+    event_base_loopexit(base, NULL);
 }
-int main(void) {
+
+int main(int argc, char **argv)
+{
     struct event_base *base;
-    struct eventlistener *listener;
-    struct sockaddr_in sock;
+    struct evconnlistener *listener;
+    struct sockaddr_in sin;
 
-    int port = 8000;
-    char * ip = "127.0.0.1";
-
+    if (PORT_USE<=0 || PORT_USE>65535) {
+        puts("Invalid port");
+        return 1;
+    }
     base = event_base_new();
     if (!base) {
-        fprintf(stderr, "Create event base failure");
-        exit(1);
+        puts("Couldn't open event base");
+        return 1;
     }
-    sock.sin_family = AF_INET; //ipv4
-    sock.sin_addr.s_addr = inet_addr(ip);
-    sock.sin_port = htons(port);
+    memset(&sin, 0, sizeof(sin));
+    sin.sin_family = AF_INET;
 
-    listener = evconnlistener(base, listenerCallbackAcceptConnection, NULL, LEV_OPT_CLOSE_ON_FREE |  LEV_OPT_REUSEABLE, 1024, sock, sizeof(sock));
+    inet_aton("127.0.0.1", &sin.sin_addr);
+    sin.sin_port = htons(PORT_USE);
+    listener = evconnlistener_new_bind(base, accept_conn_cb, NULL, LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1, (struct sockaddr*)&sin, sizeof(sin));
     if (!listener) {
-        fprintf(stderr, "Create listener failure");
-        exit(1);
+        perror("Couldn't create listener");
+        return 1;
     }
-    evconnlistener_set_error_cb(listener, listener_error_cb);
-    event_dispatch_base(base);
-    exit(0);
+    evconnlistener_set_error_cb(listener, accept_error_cb);
+    event_base_dispatch(base);
+
+
+    return 0;
 }
