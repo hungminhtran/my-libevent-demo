@@ -12,7 +12,7 @@
 #define BUFFSIZE 2048
 
 void die(char *mess) {
-    fprintf(stderr, "die: %s", mess);
+    fprintf(stderr, "die: %s\n", mess);
     fflush(stdout);
     exit(1);
 }
