@@ -11,6 +11,8 @@
 #include "lmdb.h"
 #include "lmdbInterface.h"
 
+#include <syslog.h>
+
 #define PORT_USE 8888
 #define DB_ENV "./demoDB"
 #define DB_NAME "what"
@@ -20,50 +22,54 @@ static void echo_read_cb(struct bufferevent *bev, void *ctx)
 
     struct evbuffer *input = bufferevent_get_input(bev);
     struct evbuffer *output = bufferevent_get_output(bev);
-    
+    //copy input data to keyVal
     size_t len = evbuffer_get_length(input);
     char *keyVal;
     keyVal = malloc(MAX_KEY_ALLOCATE_SIZE);
     memset(keyVal, 0, MAX_KEY_ALLOCATE_SIZE);
-    ev_ssize_t tlen = evbuffer_copyout(input, keyVal, len);
+    ev_ssize_t tlen = evbuffer_remove(input, keyVal, len);
     if (tlen < 0)
-        fprintf(stderr, "error when copy input dat");
-
-    // fprintf(stderr, "input data %c", keyVal[0]);
-
+        syslog(LOG_INFO, "error when copy input dat");
+    syslog(LOG_INFO, "***input data %s\n", keyVal);
+    //get output data from database
     char *data;
     data = malloc(MAX_DATA_ALLOCATE_SIZE);
     getDataFromDB(DB_ENV, DB_NAME, keyVal[0], &data);
-    fprintf(stderr, "data gotten:%s\n", data);
-    evbuffer_add(output, data, sizeof(data));
-    free(keyVal);
+    // syslog(LOG_INFO, "data gotten:%d %s\n", (int)(MAX_DATA_ALLOCATE_SIZE+sizeof(int)+1), data);
+    if (strlen(data) > 0)
+        //passing data to write cb
+        evbuffer_add_printf(output,"%d %s", MAX_DATA_ALLOCATE_SIZE, data);
+    else
+        evbuffer_add_printf(output,"%d %s", 2, "NF");
+
     free(data);
+    free(keyVal);
+    // evbuffer_add_printf(output, "what the hell this %d thing is going?\n", 34);
     // evbuffer_add_buffer(output, input);
+    syslog(LOG_INFO, "call readcb %p\n", ctx);
 }
 
 static void echo_write_cb(struct bufferevent *bev, void *ctx)
 {
-    struct evbuffer *output = bufferevent_get_output(bev);
-    char *data;
-    data = malloc(MAX_DATA_ALLOCATE_SIZE);
-
-    ev_ssize_t tlen = evbuffer_copyout(output, data, MAX_DATA_ALLOCATE_SIZE);
-    if (tlen < 0)
-        fprintf(stderr, "error when copy output dat");
-
-    fprintf(stderr, "output data: %s\n", data);
-
-    fprintf(stderr, "call write cb \n");
+    //copy outputdata to buffer out
+    
+    // struct evbuffer *output = bufferevent_get_output(bev);
+    // evbuffer_add(output, "what the hell this thing is going?", 34);
+    // evbuffer_add_printf(output, "what the hell this %d thing is going?\n", 34);
+    // char *data;
+    // data = malloc(MAX_DATA_ALLOCATE_SIZE);
+    // syslog(LOG_INFO, "output data: %s\n", data);
+    syslog(LOG_INFO, "call writecb %p\n", ctx);
 }
 
 static void echo_event_cb(struct bufferevent *bev, short events, void *ctx)
 {
     if (events & BEV_EVENT_ERROR ) {
-        fprintf(stderr, "Close connection because of error\n");
+        syslog(LOG_INFO, "Close connection because of error\n");
         bufferevent_free(bev);
     }
     if (events & BEV_EVENT_EOF) {
-        fprintf(stderr, "Close connection because out of data\n");
+        syslog(LOG_INFO, "Close connection because out of data\n");
         bufferevent_free(bev);
     }
 }
@@ -83,13 +89,15 @@ static void accept_error_cb(struct evconnlistener *listener, void *ctx)
 {
     struct event_base *base = evconnlistener_get_base(listener);
     int err = EVUTIL_SOCKET_ERROR();
-    fprintf(stderr, "Got an error %d (%s) on the listener. Shutting down.\n", err, evutil_socket_error_to_string(err));
+    syslog(LOG_INFO, "Got an error %d (%s) on the listener. Shutting down.\n", err, evutil_socket_error_to_string(err));
 
     event_base_loopexit(base, NULL);
 }
 
 int main(int argc, char **argv)
 {
+    openlog("demo-server-libevent", LOG_PID|LOG_CONS, LOG_USER);
+    syslog(LOG_INFO, "initializing");
     struct event_base *base;
     struct evconnlistener *listener;
     struct sockaddr_in sin;

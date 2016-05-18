@@ -7,11 +7,23 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#define BUFFSIZE 16
+//must larger than 10 (total digit of 2^32) for reading the size of buffer
+// #define BUFFSIZE 10 // for debug
+#define BUFFSIZE 2048
 
 void die(char *mess) {
-    perror(mess);
+    fprintf(stderr, "die: %s", mess);
+    fflush(stdout);
     exit(1);
+}
+
+int countTotalNumOfDigit(int num) {
+    int result = 0;
+    while (num > 0) {
+        num = num /10;
+        result ++;
+    }
+    return result;
 }
 
 int main(char argc, char* argv[]) {
@@ -33,6 +45,14 @@ int main(char argc, char* argv[]) {
     server.sin_addr.s_addr = inet_addr(argv[1]); //IP 
     server.sin_port = htons(atoi(argv[2])); //port
 
+    struct timeval timeout;      
+    timeout.tv_sec = 4;
+    timeout.tv_usec = 0;
+
+    if (setsockopt (sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout,
+                sizeof(timeout)) < 0)
+        die("setsockopt failed\n");
+
     if (connect(sock, (struct sockaddr*)&server, sizeof(server)) < 0) {
         char buffer[1024];
         inet_ntop(AF_INET, &(server.sin_addr), buffer, INET_ADDRSTRLEN);
@@ -44,18 +64,27 @@ int main(char argc, char* argv[]) {
         die("Mismatch in number of send byte");
     }
     fprintf(stdout, "Recieved:");
-    int recieved = 0;
     char buffer[BUFFSIZE] = {0};
-    while (recieved < echolen) {
-        int bytes = 0;
-        if ((bytes = recv(sock, buffer, BUFFSIZE-1, 0)) < 1) {
-            die("Failure to recv data from server");
+    int bytes = recv(sock, buffer, BUFFSIZE-1, 0);
+    int recvLen = strlen(buffer);  
+    if (bytes > 0) {
+        int totalLen = atoi(buffer);
+        totalLen += countTotalNumOfDigit(totalLen) + 1; //add 1 for space between number and message
+        fprintf(stdout, "len: %d, first %d byte: %s", totalLen, BUFFSIZE, buffer);
+        totalLen -= strlen(buffer);
+        while (totalLen > 0 && bytes > 0) {
+            memset(buffer, 0, sizeof(buffer));
+            bytes = recv(sock, buffer, BUFFSIZE-1, 0);
+            totalLen -= strlen(buffer);
+            recvLen += strlen(buffer);
+            // if (totalLen < 4)
+            //     fflush(stdout);
         }
-        recieved += bytes;
-        buffer[bytes] = '\0';
-        fprintf(stdout, "%s", buffer);
     }
-    fprintf(stdout, "\n");
+    else 
+        die("Error when recv data\n");
+    fprintf(stdout, "last %d byte: %s\n", BUFFSIZE, buffer);
+    fprintf(stdout, "len: %d\n", recvLen);
     close(sock);
     exit(0);
 }

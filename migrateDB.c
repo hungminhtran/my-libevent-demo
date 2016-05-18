@@ -38,7 +38,7 @@ int main(int argc,char * argv[])
     //     goto leave;
     // }
 
-    for (int i = 65; i < 65+29; i++) {
+    for (int i = 0; i < 255; i++) {
         memset(sval, i, sizeof(sval));
 
         key.mv_size = MAX_KEY_ALLOCATE_SIZE;
@@ -55,14 +55,14 @@ int main(int argc,char * argv[])
         goto leave;
     }
     fprintf(stderr, "print out data:\n");
-    rc = mdb_txn_begin(env, NULL, MDB_RDONLY, &txn);
-    rc = mdb_cursor_open(txn, dbi, &cursor);
-    while ((rc = mdb_cursor_get(cursor, &key, &data, MDB_NEXT)) == 0) {
-        // fprintf(stderr, "key: %s, data: %s\n",(char *) key.mv_data,(char *) data.mv_data);
-        fprintf(stderr, "data: %s\n",(char *) data.mv_data);
-    }
-    mdb_cursor_close(cursor);
-    mdb_txn_abort(txn);
+    // rc = mdb_txn_begin(env, NULL, MDB_RDONLY, &txn);
+    // rc = mdb_cursor_open(txn, dbi, &cursor);
+    // while ((rc = mdb_cursor_get(cursor, &key, &data, MDB_NEXT)) == 0) {
+    //     // fprintf(stderr, "key: %s, data: %s\n",(char *) key.mv_data,(char *) data.mv_data);
+    //     fprintf(stderr, "data: %s\n",(char *) data.mv_data);
+    // }
+    // mdb_cursor_close(cursor);
+    // mdb_txn_abort(txn);
 leave:
     mdb_dbi_close(env, dbi);
     mdb_env_close(env);

@@ -2,6 +2,7 @@
 #include "lmdb.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 void getDataFromDB(char* envName, char* dbName, char keyVal, char **outputData)
 {
@@ -12,7 +13,6 @@ void getDataFromDB(char* envName, char* dbName, char keyVal, char **outputData)
     MDB_txn *txn;
     MDB_cursor *cursor;
     char kval[MAX_KEY_ALLOCATE_SIZE];
-    char sval[MAX_DATA_ALLOCATE_SIZE];
 
     /* Note: Most error checking omitted for simplicity */
 
@@ -36,13 +36,15 @@ void getDataFromDB(char* envName, char* dbName, char keyVal, char **outputData)
     kval[0] = keyVal;
     key.mv_size = sizeof(kval);
     key.mv_data = kval;
-    data.mv_size = sizeof(MAX_DATA_ALLOCATE_SIZE);
-    data.mv_data = sval;
 
     // fprintf(stderr, "\ngetDataFromDB: key: %s, data: %s\n",(char *) key.mv_data,(char *) data.mv_data);
     rc = mdb_cursor_get(cursor, &key, &data, MDB_SET);
-    // fprintf(stderr, "\ngetDataFromDB: key: %s, data: %s\n",(char *) key.mv_data, sval);
-    memcpy(*outputData, data.mv_data, MAX_DATA_ALLOCATE_SIZE);
+    // fprintf(stderr, "\ngetDataFromDB: key: %s, data: %s\n",(char *) key.mv_data,(char *) data.mv_data);
+    if (rc != MDB_NOTFOUND)
+        memcpy(*outputData, data.mv_data, MAX_DATA_ALLOCATE_SIZE);
+    else
+        memset(*outputData, 0, sizeof(outputData));
+    
 
     mdb_cursor_close(cursor);
     mdb_txn_abort(txn);
