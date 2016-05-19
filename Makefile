@@ -13,7 +13,7 @@ all:
 	#build server
 	gcc server.c lmdbInterface.c -o server.out -levent -llmdb
 
-run:
+test:
 	make all
 
 	#run migrate data
