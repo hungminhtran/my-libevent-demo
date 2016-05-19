@@ -16,8 +16,6 @@ int main(int argc,char * argv[])
     MDB_cursor *cursor;
     char sval[MAX_DATA_ALLOCATE_SIZE];
 
-    /* Note: Most error checking omitted for simplicity */
-
     rc = mdb_env_create(&env);
     mdb_env_set_mapsize(env, MAX_DB_SIZE);
     mdb_env_set_maxdbs(env, (MDB_dbi)10);
@@ -25,29 +23,14 @@ int main(int argc,char * argv[])
     rc = mdb_txn_begin(env, NULL, 0, &txn);
     rc = mdb_dbi_open(txn, DB_NAME, MDB_CREATE, &dbi);
 
-    
-    // key.mv_size = sizeof(int);
-    // key.mv_data = sval;
-    // data.mv_size = sizeof(sval);
-    // data.mv_data = sval;
-    // memset(sval, 65, sizeof(sval));
-    // rc = mdb_put(txn, dbi, &key, &data, 0);
-    // rc = mdb_txn_commit(txn);
-    // if (rc) {
-    //     fprintf(stderr, "mdb_txn_commit: (%d) %s\n", rc, mdb_strerror(rc));
-    //     goto leave;
-    // }
-
     for (int i = 0; i < 255; i++) {
         memset(sval, i, sizeof(sval));
-
         key.mv_size = MAX_KEY_ALLOCATE_SIZE;
         key.mv_data = sval;
         data.mv_size = sizeof(sval);
         data.mv_data = sval;
         memset(sval, i, sizeof(sval));
         rc = mdb_put(txn, dbi, &key, &data, 0);
-        // rc = mdb_txn_commit(txn);
     }
      rc = mdb_txn_commit(txn);
     if (rc) {
@@ -55,14 +38,6 @@ int main(int argc,char * argv[])
         goto leave;
     }
     fprintf(stderr, "print out data:\n");
-    // rc = mdb_txn_begin(env, NULL, MDB_RDONLY, &txn);
-    // rc = mdb_cursor_open(txn, dbi, &cursor);
-    // while ((rc = mdb_cursor_get(cursor, &key, &data, MDB_NEXT)) == 0) {
-    //     // fprintf(stderr, "key: %s, data: %s\n",(char *) key.mv_data,(char *) data.mv_data);
-    //     fprintf(stderr, "data: %s\n",(char *) data.mv_data);
-    // }
-    // mdb_cursor_close(cursor);
-    // mdb_txn_abort(txn);
 leave:
     mdb_dbi_close(env, dbi);
     mdb_env_close(env);

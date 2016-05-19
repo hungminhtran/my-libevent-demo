@@ -35,7 +35,7 @@ static void echo_read_cb(struct bufferevent *bev, void *ctx)
     char *data;
     data = malloc(MAX_DATA_ALLOCATE_SIZE);
     getDataFromDB(DB_ENV, DB_NAME, keyVal[0], &data);
-    // syslog(LOG_INFO, "data gotten:%d %s\n", (int)(MAX_DATA_ALLOCATE_SIZE+sizeof(int)+1), data);
+    
     if (strlen(data) > 0)
         //passing data to write cb
         evbuffer_add_printf(output,"%d %s", MAX_DATA_ALLOCATE_SIZE, data);
@@ -44,21 +44,11 @@ static void echo_read_cb(struct bufferevent *bev, void *ctx)
 
     free(data);
     free(keyVal);
-    // evbuffer_add_printf(output, "what the hell this %d thing is going?\n", 34);
-    // evbuffer_add_buffer(output, input);
     syslog(LOG_INFO, "call readcb %p\n", ctx);
 }
 
 static void echo_write_cb(struct bufferevent *bev, void *ctx)
 {
-    //copy outputdata to buffer out
-    
-    // struct evbuffer *output = bufferevent_get_output(bev);
-    // evbuffer_add(output, "what the hell this thing is going?", 34);
-    // evbuffer_add_printf(output, "what the hell this %d thing is going?\n", 34);
-    // char *data;
-    // data = malloc(MAX_DATA_ALLOCATE_SIZE);
-    // syslog(LOG_INFO, "output data: %s\n", data);
     syslog(LOG_INFO, "call writecb %p\n", ctx);
 }
 
@@ -76,7 +66,6 @@ static void echo_event_cb(struct bufferevent *bev, short events, void *ctx)
 
 static void accept_conn_cb(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen,void *ctx)
 {
-        /* We got a new connection! Set up a bufferevent for it. */
     struct event_base *base = evconnlistener_get_base(listener);
     struct bufferevent *bev = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE);
 
@@ -111,10 +100,15 @@ int main(int argc, char **argv)
         puts("Couldn't open event base");
         return 1;
     }
+    if (argc < 2) {
+        fprintf(stdout, "server.out <IP>\n");
+        return 1;
+    }
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
 
-    inet_aton("127.0.0.1", &sin.sin_addr);
+    inet_aton(argv[1], &sin.sin_addr);
+    printf(stdout, argv[1]);
     sin.sin_port = htons(PORT_USE);
     listener = evconnlistener_new_bind(base, accept_conn_cb, NULL, LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1, (struct sockaddr*)&sin, sizeof(sin));
     if (!listener) {

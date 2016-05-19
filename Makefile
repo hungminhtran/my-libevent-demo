@@ -20,4 +20,4 @@ run:
 	./migrateDB.out
 
 	#run server (lazy :">)
-	./server.out
+	./server.out 127.0.0.1
