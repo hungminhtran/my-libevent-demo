@@ -30,7 +30,7 @@ int main(char argc, char* argv[]) {
     int sock;
     struct sockaddr_in server;
 
-    if (argc != 4) {
+    if (argc < 4) {
         fprintf(stderr, "USAGE: client <server_ip> <port> <what_you_want_to_say>\n");
         exit(1);
     }
@@ -63,14 +63,16 @@ int main(char argc, char* argv[]) {
     if (echolen != strlen(argv[3])) {
         die("Mismatch in number of send byte");
     }
-    fprintf(stdout, "Recieved:");
     char buffer[BUFFSIZE] = {0};
     int bytes = recv(sock, buffer, BUFFSIZE-1, 0);
     int recvLen = strlen(buffer);  
     if (bytes > 0) {
         int totalLen = atoi(buffer);
         totalLen += countTotalNumOfDigit(totalLen) + 1; //add 1 for space between number and message
-        fprintf(stdout, "len: %d, first %d byte: %s", totalLen, BUFFSIZE, buffer);
+        if (argc == 4) {
+            fprintf(stdout, "Recieved:");
+            fprintf(stdout, "len: %d, first %d byte: %s", totalLen, BUFFSIZE, buffer);
+        }
         totalLen -= strlen(buffer);
         while (totalLen > 0 && bytes > 0) {
             memset(buffer, 0, sizeof(buffer));
@@ -83,8 +85,10 @@ int main(char argc, char* argv[]) {
     }
     else 
         die("Error when recv data\n");
-    fprintf(stdout, "last %d byte: %s\n", BUFFSIZE, buffer);
-    fprintf(stdout, "len: %d\n", recvLen);
+    if (argc == 4) {
+        fprintf(stdout, "last %d byte: %s\n", BUFFSIZE, buffer);
+        fprintf(stdout, "len: %d\n", recvLen);
+    }
     close(sock);
     exit(0);
 }
