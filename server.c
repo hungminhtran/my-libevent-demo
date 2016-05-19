@@ -35,7 +35,7 @@ static void echo_read_cb(struct bufferevent *bev, void *ctx)
     char *data;
     data = malloc(MAX_DATA_ALLOCATE_SIZE);
     getDataFromDB(DB_ENV, DB_NAME, keyVal[0], &data);
-    
+
     if (strlen(data) > 0)
         //passing data to write cb
         evbuffer_add_printf(output,"%d %s", MAX_DATA_ALLOCATE_SIZE, data);
@@ -108,7 +108,7 @@ int main(int argc, char **argv)
     sin.sin_family = AF_INET;
 
     inet_aton(argv[1], &sin.sin_addr);
-    printf(stdout, argv[1]);
+    fprintf(stdout, "ip: %s\n", argv[1]);
     sin.sin_port = htons(PORT_USE);
     listener = evconnlistener_new_bind(base, accept_conn_cb, NULL, LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1, (struct sockaddr*)&sin, sizeof(sin));
     if (!listener) {
