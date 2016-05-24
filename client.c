@@ -9,7 +9,7 @@
 
 //must larger than 10 (total digit of 2^32) for reading the size of buffer
 // #define BUFFSIZE 10 // for debug
-#define BUFFSIZE 2048
+#define BUFFSIZE 9
 
 void die(char *mess) {
     fprintf(stderr, "die: %s\n", mess);
@@ -41,8 +41,10 @@ int main(char argc, char* argv[]) {
 
     memset(&server, 0, sizeof(server));
 
+    //Need more error checking for these function
     server.sin_family = AF_INET; //IP V4
-    server.sin_addr.s_addr = inet_addr(argv[1]); //IP 
+    server.sin_addr.s_addr = inet_addr(argv[1]); //convert ip the old ways
+    inet_pton(AF_INET, argv[1], &(server.sin_addr)); //conver ip the new ways, compatibility with IP6
     server.sin_port = htons(atoi(argv[2])); //port
 
     struct timeval timeout;      
@@ -70,24 +72,26 @@ int main(char argc, char* argv[]) {
         int totalLen = atoi(buffer);
         totalLen += countTotalNumOfDigit(totalLen) + 1; //add 1 for space between number and message
         if (argc == 4) {
-            fprintf(stdout, "Recieved:");
-            fprintf(stdout, "len: %d, first %d byte: %s", totalLen, BUFFSIZE, buffer);
+            fprintf(stdout, "Recieved:\n");
+            fprintf(stdout, "total len: %d, first %d byte: __%s___\n", totalLen, bytes, buffer);
         }
         totalLen -= strlen(buffer);
         while (totalLen > 0 && bytes > 0) {
             memset(buffer, 0, sizeof(buffer));
             bytes = recv(sock, buffer, BUFFSIZE-1, 0);
-            totalLen -= strlen(buffer);
-            recvLen += strlen(buffer);
-            // if (totalLen < 4)
-            //     fflush(stdout);
+            totalLen -= bytes;
+            // totalLen -= strlen(buffer);
+            // recvLen += strlen(buffer);
+            recvLen += bytes;
+            if (argc == 4)
+                fprintf(stdout, "  strlen:  %d bytes: %d recvLen: %d totalLen: %d  __%s___\n", (int)strlen(buffer), bytes, recvLen, totalLen, buffer);
         }
     }
     else 
         die("Error when recv data\n");
     if (argc == 4) {
-        fprintf(stdout, "last %d byte: %s\n", BUFFSIZE, buffer);
-        fprintf(stdout, "len: %d\n", recvLen);
+        fprintf(stdout, "last %d byte: %s___\n", (int)strlen(buffer), buffer);
+        fprintf(stdout, "len: %d__\n", recvLen);
     }
     close(sock);
     exit(0);
