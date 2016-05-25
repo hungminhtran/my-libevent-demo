@@ -18,6 +18,7 @@
 #define DB_NAME "what"
 
 int TOTAL_CONNECTION = 0;
+int ORDER = 0;
 
 static void echo_read_cb(struct bufferevent *bev, void *ctx)
 {
@@ -59,14 +60,14 @@ static void echo_event_cb(struct bufferevent *bev, short events, void *ctx)
     if (events & BEV_EVENT_ERROR ) {
         syslog(LOG_INFO, "Close connection because of error\n");
         bufferevent_free(bev);
-        TOTAL_CONNECTION--;
     }
     else if (events & BEV_EVENT_EOF) {
         syslog(LOG_INFO, "Close connection because out of data\n");
         bufferevent_free(bev);
-        TOTAL_CONNECTION--;
     }
-    fprintf(stdout, "total connection %d\n", TOTAL_CONNECTION);
+    TOTAL_CONNECTION--;
+    ORDER++;
+    fprintf(stdout, "%d. total connection %d\n", ORDER, TOTAL_CONNECTION);
 }
 
 static void accept_conn_cb(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen,void *ctx)
@@ -78,8 +79,9 @@ static void accept_conn_cb(struct evconnlistener *listener, evutil_socket_t fd, 
 
     bufferevent_enable(bev, EV_READ|EV_WRITE);
     syslog(LOG_INFO, "Accpet new connection\n");
-    fprintf(stdout, "total connection %d\n", TOTAL_CONNECTION);
     TOTAL_CONNECTION++;
+    ORDER++;
+    fprintf(stdout, "%d. total connection %d\n", ORDER, TOTAL_CONNECTION);
 }
 
 static void accept_error_cb(struct evconnlistener *listener, void *ctx)

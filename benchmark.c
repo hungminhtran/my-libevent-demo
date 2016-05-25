@@ -3,7 +3,7 @@
 #include <pthread.h>
 #include <time.h>
 
-#define NUM_THREADS 128
+#define NUM_THREADS 8
 #define NUM_RUNTIME 6
  
  
