@@ -74,7 +74,7 @@ static void echo_event_cb(struct bufferevent *bev, short events, void *ctx)
     }
     TOTAL_CONNECTION--;
     ORDER++;
-    fprintf(stdout, "%d. total connection f %d total request %d\n", ORDER, TOTAL_CONNECTION, TOTAL_REQUEST);
+    // fprintf(stdout, "%d. total connection f %d total request %d\n", ORDER, TOTAL_CONNECTION, TOTAL_REQUEST);
     if (TOTAL_CONNECTION == 0) {
         /* here, do your time-consuming job */
         ENG_TIME = clock();
@@ -99,7 +99,7 @@ static void accept_conn_cb(struct evconnlistener *listener, evutil_socket_t fd, 
     TOTAL_CONNECTION++;
     ORDER++;
     TOTAL_REQUEST++;
-    fprintf(stdout, "%d. total connection a %d total request %d\n", ORDER, TOTAL_CONNECTION, TOTAL_REQUEST);
+    // fprintf(stdout, "%d. total connection a %d total request %d\n", ORDER, TOTAL_CONNECTION, TOTAL_REQUEST);
 }
 
 static void accept_error_cb(struct evconnlistener *listener, void *ctx)

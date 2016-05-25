@@ -14,7 +14,7 @@ void *thr_func(void *arg) {
     // sleep(arg1 % 3);
     char cmdbuff[1024];
     sprintf(cmdbuff, "./client.out 192.168.56.50 8888  %d %d %d", arg1, arg1, arg1);
-    fprintf(stdout, "%s\n", cmdbuff);
+    // fprintf(stdout, "%s\n", cmdbuff);
     system(cmdbuff);
  }
   pthread_exit(NULL);
