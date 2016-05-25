@@ -7,8 +7,6 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-//must larger than 10 (total digit of 2^32) for reading the size of buffer
-// #define BUFFSIZE 10 // for debug
 #define BUFFSIZE 9
 
 void die(char *mess) {
@@ -66,33 +64,17 @@ int main(char argc, char* argv[]) {
         die("Mismatch in number of send byte");
     }
     char buffer[BUFFSIZE] = {0};
-    int bytes = recv(sock, buffer, BUFFSIZE-1, 0);
-    int recvLen = strlen(buffer);  
-    if (bytes > 0) {
-        int totalLen = atoi(buffer);
-        totalLen += countTotalNumOfDigit(totalLen) + 1; //add 1 for space between number and message
-        if (argc == 4) {
-            fprintf(stdout, "Recieved:\n");
-            fprintf(stdout, "total len: %d, first %d byte: __%s___\n", totalLen, bytes, buffer);
-        }
-        totalLen -= strlen(buffer);
-        while (totalLen > 0 && bytes > 0) {
-            memset(buffer, 0, sizeof(buffer));
-            bytes = recv(sock, buffer, BUFFSIZE-1, 0);
-            totalLen -= bytes;
-            // totalLen -= strlen(buffer);
-            // recvLen += strlen(buffer);
-            recvLen += bytes;
-            if (argc == 4)
-                fprintf(stdout, "  strlen:  %d bytes: %d recvLen: %d totalLen: %d  __%s___\n", (int)strlen(buffer), bytes, recvLen, totalLen, buffer);
-        }
+    int bytes = 0;
+    memset(buffer, '\0', sizeof(buffer));
+    int totalLen = 0;
+    while ((bytes = recv(sock, buffer, BUFFSIZE-1, 0)) > 0) {
+        totalLen +=  (int)strlen(buffer);
+        if (argc == 4)
+            fprintf(stdout, "total len %d buffer %s buffsize %d buff len %d", totalLen, buffer, BUFFSIZE, (int)strlen(buffer));
+        memset(buffer, 0, BUFFSIZE);
     }
-    else 
-        die("Error when recv data\n");
-    if (argc == 4) {
-        fprintf(stdout, "last %d byte: %s___\n", (int)strlen(buffer), buffer);
-        fprintf(stdout, "len: %d__\n", recvLen);
-    }
+    fprintf(stdout, "last %d byte: %s___\n", (int)strlen(buffer), buffer);
+    fprintf(stdout, "total len: %d__\n", totalLen);
     close(sock);
     exit(0);
 }
