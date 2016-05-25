@@ -79,7 +79,7 @@ static void echo_event_cb(struct bufferevent *bev, short events, void *ctx)
         /* here, do your time-consuming job */
         ENG_TIME = clock();
         time_spent = (double)(ENG_TIME - BEGIN_TIME) / CLOCKS_PER_SEC;
-        fprintf(stdout, "total time: %f total request: %d request/second %f", time_spent, TOTAL_REQUEST, TOTAL_REQUEST/time_spent);
+        fprintf(stdout, "total time: %f total request: %d request/second %f\n", time_spent, TOTAL_REQUEST, TOTAL_REQUEST/time_spent);
     }
 }
 
