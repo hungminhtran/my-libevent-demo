@@ -40,21 +40,9 @@ static void echo_read_cb(struct bufferevent *bev, void *ctx)
     if (tlen < 0) {
         syslog(LOG_INFO, "error when copy input dat");
         syslog(LOG_INFO, "***input data %s\n", keyVal);
-    }
-    //get output data from database
-    char *data;
-    data = malloc(MAX_DATA_ALLOCATE_SIZE);
-    getDataFromDB(DB_ENV, DB_NAME, keyVal[0], &data);
-
-    if (strlen(data) > 0)
-        //passing data to write cb
-        // evbuffer_add_printf(output, data, MAX_DATA_ALLOCATE_SIZE);
-        evbuffer_add(output, data, MAX_DATA_ALLOCATE_SIZE);
-        // evbuffer_add_printf(output,"%d %s", MAX_DATA_ALLOCATE_SIZE, data);
-    else
         evbuffer_add_printf(output,"%d %s", 2, "NF");
-
-    free(data);
+    } else
+        evbuffer_add(output, keyVal, tlen);
     free(keyVal);
 }
 
