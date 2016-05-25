@@ -12,6 +12,7 @@
 #include "lmdbInterface.h"
 
 #include <syslog.h>
+#include <time.h>
 
 #define PORT_USE 8888
 #define DB_ENV "./demoDB"
@@ -19,6 +20,11 @@
 
 int TOTAL_CONNECTION = 0;
 int ORDER = 0;
+int TOTAL_REQUEST = 0;
+
+clock_t BEGIN_TIME, ENG_TIME;
+double time_spent;
+
 
 static void echo_read_cb(struct bufferevent *bev, void *ctx)
 {
@@ -69,6 +75,12 @@ static void echo_event_cb(struct bufferevent *bev, short events, void *ctx)
     TOTAL_CONNECTION--;
     ORDER++;
     fprintf(stdout, "%d. total connection %d\n", ORDER, TOTAL_CONNECTION);
+    if (TOTAL_CONNECTION == 0) {
+        /* here, do your time-consuming job */
+        ENG_TIME = clock();
+        time_spent = (double)(ENG_TIME - BEGIN_TIME) / CLOCKS_PER_SEC;
+        fprintf(stdout, "total time: %f total request: %d request/second %f", time_spent, TOTAL_REQUEST, TOTAL_REQUEST/time_spent);
+    }
 }
 
 static void accept_conn_cb(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen,void *ctx)
@@ -80,8 +92,13 @@ static void accept_conn_cb(struct evconnlistener *listener, evutil_socket_t fd, 
 
     bufferevent_enable(bev, EV_READ|EV_WRITE);
     // syslog(LOG_INFO, "Accpet new connection\n");
+    if (!TOTAL_CONNECTION) {
+        BEGIN_TIME = clock();
+        TOTAL_REQUEST = 0;
+    }
     TOTAL_CONNECTION++;
     ORDER++;
+    TOTAL_REQUEST++;
     fprintf(stdout, "%d. total connection %d\n", ORDER, TOTAL_CONNECTION);
 }
 
