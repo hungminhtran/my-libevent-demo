@@ -14,7 +14,7 @@ all:
 	gcc server.c lmdbInterface.c -o server.out -levent -llmdb
 
 	#build benchmark tool
-	gcc benchmark.c -o benchmark.out -lpthread  
+	gcc -std=c99 benchmark.c -o benchmark.out -lpthread  
 
 migrate:
 	make all
