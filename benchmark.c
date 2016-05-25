@@ -4,7 +4,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define NUM_THREADS 1024
+#define NUM_THREADS 16
 #define NUM_RUNTIME 3
  
  
