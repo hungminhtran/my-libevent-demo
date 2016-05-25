@@ -38,7 +38,8 @@ static void echo_read_cb(struct bufferevent *bev, void *ctx)
 
     if (strlen(data) > 0)
         //passing data to write cb
-        evbuffer_add_printf(output, data, MAX_DATA_ALLOCATE_SIZE);
+        // evbuffer_add_printf(output, data, MAX_DATA_ALLOCATE_SIZE);
+        evbuffer_add(output, data, MAX_DATA_ALLOCATE_SIZE);
         // evbuffer_add_printf(output,"%d %s", MAX_DATA_ALLOCATE_SIZE, data);
     else
         evbuffer_add_printf(output,"%d %s", 2, "NF");

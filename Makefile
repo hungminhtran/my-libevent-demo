@@ -13,6 +13,14 @@ all:
 	#build server
 	gcc server.c lmdbInterface.c -o server.out -levent -llmdb
 
+	#build benchmark tool
+	gcc benchmark.c -o benchmark.out -lpthread  
+
+migrate:
+	make all
+
+	#run migrate data
+	./migrateDB.out
 test:
 	make all
 
@@ -21,3 +29,6 @@ test:
 
 	#run server (lazy :">)
 	./server.out 127.0.0.1
+benchmark:
+	make all
+	./benchmark.out

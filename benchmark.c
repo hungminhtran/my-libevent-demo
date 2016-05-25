@@ -3,16 +3,16 @@
 #include <pthread.h>
 #include <time.h>
 
-#define NUM_THREADS 30
+#define NUM_THREADS 100
  
  
 void *thr_func(void *arg) {
   // thread_data_t *data = (thread_data_t *)arg;
-  char arg1 = rand() %255;
+  int arg1 = rand() % 255;
   char cmbuff[1024];
   // sprintf(cmbuff, "./client.out 192.168.56.50 8888  %c", arg1);
-  sprintf(cmbuff, "./client.out 127.0.0.1 8888  %c %d", arg1, arg1);
-  // sprintf(cmbuff, "./client.out 192.168.56.50 8888  %c %d", arg1, arg1);
+  sprintf(cmbuff, "./client.out 192.168.56.50 8888  %d %d %d", arg1, arg1, arg1);
+  // fprintf(stdout, "%d ", arg1);
   system(cmbuff);
  
   pthread_exit(NULL);

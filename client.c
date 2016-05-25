@@ -7,7 +7,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#define BUFFSIZE 9
+#define BUFFSIZE 4096
 
 void die(char *mess) {
     fprintf(stderr, "die: %s\n", mess);
@@ -59,7 +59,9 @@ int main(char argc, char* argv[]) {
         fprintf(stderr, "ip: %s", buffer);
         die("Failure to connect with server");
     }
-    int echolen = send(sock, argv[3], strlen(argv[3]), 0);
+    int temp = atoi(argv[3]);
+    int echolen = send(sock, &temp, strlen(argv[3]), 0);
+    // int echolen = send(sock, argv[3], strlen(argv[3]), 0);
     if (echolen != strlen(argv[3])) {
         die("Mismatch in number of send byte");
     }
@@ -70,11 +72,11 @@ int main(char argc, char* argv[]) {
     while ((bytes = recv(sock, buffer, BUFFSIZE-1, 0)) > 0) {
         totalLen +=  (int)strlen(buffer);
         if (argc == 4)
-            fprintf(stdout, "total len %d buffer %s buffsize %d buff len %d", totalLen, buffer, BUFFSIZE, (int)strlen(buffer));
+            fprintf(stdout, "total len %d buffer %s buffsize %d buff len %d\n", totalLen, buffer, BUFFSIZE, (int)strlen(buffer));
         memset(buffer, 0, BUFFSIZE);
     }
-    fprintf(stdout, "last %d byte: %s___\n", (int)strlen(buffer), buffer);
-    fprintf(stdout, "total len: %d__\n", totalLen);
+    if (argc == 5 || argc == 4)
+        fprintf(stdout, "\nbuffsize %d\nbuffer %s\ntotal len: %d__\n", BUFFSIZE,buffer, totalLen);
     close(sock);
     exit(0);
 }
