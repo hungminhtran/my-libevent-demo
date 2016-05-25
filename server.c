@@ -31,9 +31,10 @@ static void echo_read_cb(struct bufferevent *bev, void *ctx)
     keyVal = malloc(MAX_KEY_ALLOCATE_SIZE);
     memset(keyVal, 0, MAX_KEY_ALLOCATE_SIZE);
     ev_ssize_t tlen = evbuffer_remove(input, keyVal, len);
-    if (tlen < 0)
+    if (tlen < 0) {
         syslog(LOG_INFO, "error when copy input dat");
-    syslog(LOG_INFO, "***input data %s\n", keyVal);
+        syslog(LOG_INFO, "***input data %s\n", keyVal);
+    }
     //get output data from database
     char *data;
     data = malloc(MAX_DATA_ALLOCATE_SIZE);
@@ -62,7 +63,7 @@ static void echo_event_cb(struct bufferevent *bev, short events, void *ctx)
         bufferevent_free(bev);
     }
     else if (events & BEV_EVENT_EOF) {
-        syslog(LOG_INFO, "Close connection because out of data\n");
+        // syslog(LOG_INFO, "Close connection because out of data\n");
         bufferevent_free(bev);
     }
     TOTAL_CONNECTION--;
@@ -78,7 +79,7 @@ static void accept_conn_cb(struct evconnlistener *listener, evutil_socket_t fd, 
     bufferevent_setcb(bev, echo_read_cb, echo_write_cb, echo_event_cb, NULL);
 
     bufferevent_enable(bev, EV_READ|EV_WRITE);
-    syslog(LOG_INFO, "Accpet new connection\n");
+    // syslog(LOG_INFO, "Accpet new connection\n");
     TOTAL_CONNECTION++;
     ORDER++;
     fprintf(stdout, "%d. total connection %d\n", ORDER, TOTAL_CONNECTION);
